@@ -63,6 +63,13 @@ public class AutoPolicyServiceImpl implements AutoPolicyService {
         updatedPolicy.setId(id);
         return autoPolicyMapper.toDTO(autoPolicyRepository.save(updatedPolicy));
     }
+    @Override
+    public AutoPolicyDTO getPolicyByPolicyNumber(String policyNumber) {
+        AutoPolicy policy = autoPolicyRepository.findByPolicyNumber(policyNumber)
+                .orElseThrow(() -> new AutoPolicyNotFoundException("AutoPolicy with policy number " + policyNumber + " not found"));
+
+        return autoPolicyMapper.toDTO(policy);
+    }
 
     @Override
     public void deletePolicy(Long id) {

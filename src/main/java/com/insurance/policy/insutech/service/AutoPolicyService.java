@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface AutoPolicyService {
+  AutoPolicyDTO getPolicyByPolicyNumber(String policyNumber);
     AutoPolicyDTO createPolicy(AutoPolicyDTO autoPolicyDTO);
     AutoPolicyDTO getPolicyById(Long id);
     List<AutoPolicyDTO> getAllPolicies();

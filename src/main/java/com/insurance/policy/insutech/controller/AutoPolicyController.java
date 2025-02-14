@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
-
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/v1/policies")
 @RequiredArgsConstructor
@@ -25,6 +25,10 @@ public class AutoPolicyController {
         AutoPolicyDTO createdPolicy = autoPolicyService.createPolicy(autoPolicyDTO);
         URI location = URI.create("/api/v1/policies/" + createdPolicy.getId());
         return ResponseEntity.created(location).body(createdPolicy);
+    }
+    @GetMapping("/policyNumber/{policyNumber}")
+    public ResponseEntity<AutoPolicyDTO> getPolicyByPolicyNumber(@PathVariable String policyNumber) {
+        return ResponseEntity.ok(autoPolicyService.getPolicyByPolicyNumber(policyNumber));
     }
 
     @PostMapping("/batch")

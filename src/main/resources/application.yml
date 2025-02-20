@@ -5,7 +5,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/postgres
     username: benjaminbatte
-    password:
+    password: Col@2020
 
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect

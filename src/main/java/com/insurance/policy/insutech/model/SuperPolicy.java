@@ -11,19 +11,23 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @MappedSuperclass
-public abstract class SuperPolicy implements Cloneable{
+public abstract class SuperPolicy implements Cloneable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String policyNumber;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
     private PolicyStatus status;
 
     private LocalDate startDate;
     private LocalDate endDate;
+
+    @Column(precision = 10, scale = 2)
     private BigDecimal premiumAmount;
 
     public SuperPolicy(String policyNumber, PolicyStatus status, LocalDate startDate, LocalDate endDate, BigDecimal premiumAmount) {

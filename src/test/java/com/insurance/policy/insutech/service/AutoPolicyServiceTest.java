@@ -10,10 +10,7 @@ import com.insurance.policy.insutech.repository.AutoPolicyRepository;
 import com.insurance.policy.insutech.service.impl.AutoPolicyServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
+import org.mockito.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,8 +25,8 @@ class AutoPolicyServiceTest {
     @Mock
     private AutoPolicyRepository autoPolicyRepository;
 
-    @Spy
-    private AutoPolicyMapper autoPolicyMapper = AutoPolicyMapper.INSTANCE;
+    @Mock
+    private AutoPolicyMapper autoPolicyMapper; // Use Mock, not Spy
 
     @InjectMocks
     private AutoPolicyServiceImpl autoPolicyService;
@@ -41,16 +38,17 @@ class AutoPolicyServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        policy = new AutoPolicy(1L, "AP-101", PolicyStatus.fromCode("ACT"), AutoPolicyType.fromCode("COLL"),
-                "Ford", "F-150", "2023", "Michael", "Johnson",
-                LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31),
-                BigDecimal.valueOf(700.00));
+        policy = new AutoPolicy(
+                "AP-101", PolicyStatus.ACTIVE, LocalDate.of(2023, 1, 1), LocalDate.of(2023, 12, 31),
+                BigDecimal.valueOf(700.00), AutoPolicyType.COLLISION, "Ford", "F-150",
+                "2023", "Michael", "Johnson"
+        );
 
         policyDTO = new AutoPolicyDTO();
         policyDTO.setId(1L);
         policyDTO.setPolicyNumber("AP-101");
-        policyDTO.setStatus(PolicyStatus.fromCode("ACT"));
-        policyDTO.setPolicyType(AutoPolicyType.fromCode("COLL"));
+        policyDTO.setStatus(PolicyStatus.ACTIVE);
+        policyDTO.setPolicyType(AutoPolicyType.COLLISION);
         policyDTO.setVehicleMake("Ford");
         policyDTO.setVehicleModel("F-150");
         policyDTO.setVehicleYear("2023");
@@ -63,16 +61,18 @@ class AutoPolicyServiceTest {
 
     @Test
     void shouldCreatePolicy() {
-        when(autoPolicyMapper.toEntity(any())).thenReturn(policy);
-        when(autoPolicyRepository.save(any())).thenReturn(policy);
-        when(autoPolicyMapper.toDTO(any())).thenReturn(policyDTO);
+        when(autoPolicyMapper.toEntity(any(AutoPolicyDTO.class))).thenReturn(policy);
+        when(autoPolicyRepository.save(any(AutoPolicy.class))).thenReturn(policy);
+        when(autoPolicyMapper.toDTO(any(AutoPolicy.class))).thenReturn(policyDTO);
 
         AutoPolicyDTO savedPolicy = autoPolicyService.createPolicy(policyDTO);
 
         assertNotNull(savedPolicy);
         assertEquals("AP-101", savedPolicy.getPolicyNumber());
-        assertEquals(PolicyStatus.fromCode("ACT"), savedPolicy.getStatus());
-        assertEquals(AutoPolicyType.fromCode("COLL"), savedPolicy.getPolicyType());
+        assertEquals(PolicyStatus.ACTIVE, savedPolicy.getStatus());
+        assertEquals(AutoPolicyType.COLLISION, savedPolicy.getPolicyType());
+
+        verify(autoPolicyRepository, times(1)).save(any(AutoPolicy.class));
     }
 
     @Test
@@ -84,13 +84,19 @@ class AutoPolicyServiceTest {
 
         assertNotNull(foundPolicy);
         assertEquals("AP-101", foundPolicy.getPolicyNumber());
+
+        verify(autoPolicyRepository, times(1)).findById(1L);
     }
 
     @Test
     void shouldThrowExceptionWhenPolicyNotFound() {
         when(autoPolicyRepository.findById(2L)).thenReturn(Optional.empty());
 
-        assertThrows(AutoPolicyNotFoundException.class, () -> autoPolicyService.getPolicyById(2L));
+        Exception exception = assertThrows(AutoPolicyNotFoundException.class, () -> autoPolicyService.getPolicyById(2L));
+
+        assertEquals("Auto Policy not found with ID: 2", exception.getMessage());
+
+        verify(autoPolicyRepository, times(1)).findById(2L);
     }
 
     @Test
@@ -102,5 +108,8 @@ class AutoPolicyServiceTest {
 
         assertFalse(policies.isEmpty());
         assertEquals(1, policies.size());
+        assertEquals("AP-101", policies.get(0).getPolicyNumber());
+
+        verify(autoPolicyRepository, times(1)).findAll();
     }
 }

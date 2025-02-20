@@ -1,12 +1,13 @@
 package com.insurance.policy.insutech.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 
+import lombok.Getter;
+
+@Getter
 public enum PolicyStatus {
-    ACTIVE("ACT", "Active Policy"),
-    EXPIRED("EXP", "Expired Policy"),
-    CANCELLED("CAN", "Cancelled Policy");
+    ACTIVE("ACT", "Policy is currently active"),
+    EXPIRED("EXP", "Policy has expired"),
+    CANCELLED("CAN", "Policy has been cancelled");
 
     private final String code;
     private final String description;
@@ -16,18 +17,12 @@ public enum PolicyStatus {
         this.description = description;
     }
 
-    @JsonValue
-    public String getCode() {
-        return code;  // Serialize as "ACT", "EXP", "CAN"
-    }
-
-    @JsonCreator
     public static PolicyStatus fromCode(String code) {
-        for (PolicyStatus status : values()) {
+        for (PolicyStatus status : PolicyStatus.values()) {
             if (status.code.equalsIgnoreCase(code)) {
                 return status;
             }
         }
-        throw new IllegalArgumentException("Invalid PolicyStatus code: " + code);
+        throw new IllegalArgumentException("Invalid PolicyStatus: " + code);
     }
 }

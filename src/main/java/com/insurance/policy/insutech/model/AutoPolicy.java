@@ -1,7 +1,6 @@
 package com.insurance.policy.insutech.model;
 
 import com.insurance.policy.insutech.converter.AutoPolicyTypeConverter;
-import com.insurance.policy.insutech.converter.PolicyStatusConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,22 +13,11 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class AutoPolicy {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(unique = true, nullable = false)
-    private String policyNumber;
-
-    @Convert(converter = PolicyStatusConverter.class)
-    @Column(nullable = false, length = 3)
-    private PolicyStatus status;
+public class AutoPolicy extends SuperPolicy {
 
     @Convert(converter = AutoPolicyTypeConverter.class)
-    @Column(nullable = false, length = 4)
+    @Column(name = "policy_type", length = 20, nullable = false)
+
     private AutoPolicyType policyType;
 
     private String vehicleMake;
@@ -38,9 +26,15 @@ public class AutoPolicy {
     private String firstName;
     private String lastName;
 
-    private LocalDate startDate;
-    private LocalDate endDate;
-
-    @Column(precision = 10, scale = 2)
-    private BigDecimal premiumAmount;
+    @Builder
+    public AutoPolicy(String policyNumber, PolicyStatus status, LocalDate startDate, LocalDate endDate, BigDecimal premiumAmount,
+                      AutoPolicyType policyType, String vehicleMake, String vehicleModel, String vehicleYear, String firstName, String lastName) {
+        super(policyNumber, status, startDate, endDate, premiumAmount);
+        this.policyType = policyType;
+        this.vehicleMake = vehicleMake;
+        this.vehicleModel = vehicleModel;
+        this.vehicleYear = vehicleYear;
+        this.firstName = firstName;
+        this.lastName = lastName;
+    }
 }

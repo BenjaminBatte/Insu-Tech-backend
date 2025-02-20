@@ -42,7 +42,8 @@ public class AutoPolicyServiceImpl implements AutoPolicyService {
     public AutoPolicyDTO getPolicyById(Long id) {
         return autoPolicyRepository.findById(id)
                 .map(autoPolicyMapper::toDTO)
-                .orElseThrow(() -> new AutoPolicyNotFoundException("AutoPolicy with ID " + id + " not found"));
+                .orElseThrow(() ->new AutoPolicyNotFoundException("Auto Policy not found with ID: " + id));
+
     }
 
     @Override
@@ -57,7 +58,8 @@ public class AutoPolicyServiceImpl implements AutoPolicyService {
     @Override
     public AutoPolicyDTO updatePolicy(Long id, AutoPolicyDTO autoPolicyDTO) {
         if (!autoPolicyRepository.existsById(id)) {
-            throw new AutoPolicyNotFoundException("AutoPolicy with ID " + id + " not found");
+            throw new AutoPolicyNotFoundException("Auto Policy not found with ID: " + id);
+
         }
         AutoPolicy updatedPolicy = autoPolicyMapper.toEntity(autoPolicyDTO);
         updatedPolicy.setId(id);

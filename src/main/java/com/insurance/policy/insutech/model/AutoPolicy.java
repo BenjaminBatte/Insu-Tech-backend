@@ -17,7 +17,6 @@ public class AutoPolicy extends SuperPolicy {
 
     @Convert(converter = AutoPolicyTypeConverter.class)
     @Column(name = "policy_type", length = 20, nullable = false)
-
     private AutoPolicyType policyType;
 
     private String vehicleMake;

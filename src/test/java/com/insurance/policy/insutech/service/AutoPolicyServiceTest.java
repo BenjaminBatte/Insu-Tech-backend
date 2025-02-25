@@ -11,6 +11,9 @@ import com.insurance.policy.insutech.service.impl.AutoPolicyServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -98,18 +101,21 @@ class AutoPolicyServiceTest {
 
         verify(autoPolicyRepository, times(1)).findById(2L);
     }
-
     @Test
     void shouldGetAllPolicies() {
-        when(autoPolicyRepository.findAll()).thenReturn(List.of(policy));
-        when(autoPolicyMapper.toDTO(policy)).thenReturn(policyDTO);
+        Page<AutoPolicy> mockPage = new PageImpl<>(List.of(policy), PageRequest.of(0, 10), 1); // Mock Page
+        when(autoPolicyRepository.findAll(any(PageRequest.class))).thenReturn(mockPage);
+        when(autoPolicyMapper.toDTO(any(AutoPolicy.class))).thenReturn(policyDTO);
 
-        List<AutoPolicyDTO> policies = autoPolicyService.getAllPolicies();
+        Page<AutoPolicyDTO> policies = autoPolicyService.getAllPolicies(PageRequest.of(0, 10));
 
         assertFalse(policies.isEmpty());
-        assertEquals(1, policies.size());
-        assertEquals("AP-101", policies.get(0).getPolicyNumber());
+        assertEquals(1, policies.getTotalElements());
+        assertEquals("AP-101", policies.getContent().get(0).getPolicyNumber());
 
-        verify(autoPolicyRepository, times(1)).findAll();
+        verify(autoPolicyRepository, times(1)).findAll(any(PageRequest.class));
     }
+
+
+
 }

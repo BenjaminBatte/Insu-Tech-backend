@@ -22,12 +22,12 @@ public enum AutoPolicyType {
     }
 
     @JsonCreator
-    public static AutoPolicyType fromCode(String code) {
-        for (AutoPolicyType type : values()) {
+    public static AutoPolicyType fromString(String code) {
+        for (AutoPolicyType type : AutoPolicyType.values()) {
             if (type.code.equalsIgnoreCase(code)) {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Invalid AutoPolicyType code: " + code);
+        throw new IllegalArgumentException("Invalid AutoPolicyType: " + code);
     }
 }

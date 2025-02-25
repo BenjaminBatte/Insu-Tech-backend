@@ -20,8 +20,8 @@ public abstract class SuperPolicy implements Cloneable {
     @Column(unique = true, nullable = false)
     private String policyNumber;
 
+    @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
     private PolicyStatus status;
 
     private LocalDate startDate;

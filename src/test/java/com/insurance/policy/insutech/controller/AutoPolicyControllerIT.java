@@ -8,7 +8,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -19,7 +18,6 @@ public class AutoPolicyControllerIT {
 
     @Autowired
     private MockMvc mockMvc;
-
 
     @Test
     void shouldCreatePolicy() throws Exception {
@@ -32,8 +30,8 @@ public class AutoPolicyControllerIT {
                             "policyNumber": "%s",
                             "firstName": "John",
                             "lastName": "Doe",
-                            "policyType": "COMP",
-                            "status": "ACT",
+                            "policyType": "COMPREHENSIVE",
+                            "status": "ACTIVE",
                             "vehicleMake": "Toyota",
                             "vehicleModel": "Camry",
                             "vehicleYear": 2022,
@@ -45,22 +43,22 @@ public class AutoPolicyControllerIT {
                 .andExpect(status().isCreated());
     }
 
-
-
     @Test
     void shouldGetAllPolicies() throws Exception {
         mockMvc.perform(get("/api/v1/policies"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
 
     @Test
     void shouldFilterPolicies() throws Exception {
         mockMvc.perform(get("/api/v1/policies/filter")
                         .param("startDate", "2023-01-01")
-                        .param("status", "ACT")
-                        .param("type", "COMP")
+                        .param("status", "ACTIVE")  // ✅ Enum should match exactly
+                        .param("type", "COMPREHENSIVE")  // ✅ Enum should match exactly
                         .param("firstName", "John")
                         .param("vehicleMake", "Toyota"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON));
     }
 }

@@ -16,28 +16,41 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.beans.BeanUtils;
+import java.beans.PropertyDescriptor;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
 public class AutoPolicyServiceImpl implements AutoPolicyService {
 
+    private static final Logger logger = LoggerFactory.getLogger(AutoPolicyServiceImpl.class);
+
     private final AutoPolicyRepository autoPolicyRepository;
-    private final AutoPolicyMapper autoPolicyMapper = AutoPolicyMapper.INSTANCE;
+    private final AutoPolicyMapper autoPolicyMapper;
 
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
     public AutoPolicyDTO createPolicy(AutoPolicyDTO autoPolicyDTO) {
+        logger.info("Creating new auto policy with policy number: {}", autoPolicyDTO.getPolicyNumber());
         AutoPolicy policy = autoPolicyMapper.toEntity(autoPolicyDTO);
-        return autoPolicyMapper.toDTO(autoPolicyRepository.save(policy));
+        AutoPolicy savedPolicy = autoPolicyRepository.save(policy);
+        logger.info("Successfully created policy with ID: {}", savedPolicy.getId());
+        return autoPolicyMapper.toDTO(savedPolicy);
     }
-
     @Override
     public AutoPolicyDTO getPolicyById(Long id) {
         return autoPolicyRepository.findById(id)
@@ -45,26 +58,40 @@ public class AutoPolicyServiceImpl implements AutoPolicyService {
                 .orElseThrow(() ->new AutoPolicyNotFoundException("Auto Policy not found with ID: " + id));
 
     }
-
-    @Override
-    public List<AutoPolicyDTO> getAllPolicies() {
-        List<AutoPolicy> policies = autoPolicyRepository.findAll();
-        if (policies.isEmpty()) {
-            throw new AutoPolicyNotFoundException("No auto policies found in the system.");
-        }
-        return policies.stream().map(autoPolicyMapper::toDTO).collect(Collectors.toList());
-    }
-
     @Override
     public AutoPolicyDTO updatePolicy(Long id, AutoPolicyDTO autoPolicyDTO) {
-        if (!autoPolicyRepository.existsById(id)) {
-            throw new AutoPolicyNotFoundException("Auto Policy not found with ID: " + id);
+        AutoPolicy existingPolicy = autoPolicyRepository.findById(id)
+                .orElseThrow(() -> new AutoPolicyNotFoundException("Auto Policy not found with ID: " + id));
 
-        }
-        AutoPolicy updatedPolicy = autoPolicyMapper.toEntity(autoPolicyDTO);
-        updatedPolicy.setId(id);
-        return autoPolicyMapper.toDTO(autoPolicyRepository.save(updatedPolicy));
+        // Copy only non-null fields
+        BeanUtils.copyProperties(autoPolicyDTO, existingPolicy, getNullPropertyNames(autoPolicyDTO));
+
+        // Save updated entity
+        AutoPolicy updatedPolicy = autoPolicyRepository.save(existingPolicy);
+        return autoPolicyMapper.toDTO(updatedPolicy);
     }
+
+    @Override
+    public Page<AutoPolicyDTO> getAllPolicies(Pageable pageable) {
+        return autoPolicyRepository.findAll(pageable)
+                .map(autoPolicyMapper::toDTO);
+    }
+
+    // Helper method to get property names with null values
+    private String[] getNullPropertyNames(Object source) {
+        return Arrays.stream(BeanUtils.getPropertyDescriptors(source.getClass()))
+                .map(PropertyDescriptor::getName)
+                .filter(propertyName -> {
+                    try {
+                        return Objects.isNull(BeanUtils.getPropertyDescriptor(source.getClass(), propertyName)
+                                .getReadMethod().invoke(source));
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
+                .toArray(String[]::new);
+    }
+
     @Override
     public AutoPolicyDTO getPolicyByPolicyNumber(String policyNumber) {
         AutoPolicy policy = autoPolicyRepository.findByPolicyNumber(policyNumber)
@@ -92,41 +119,28 @@ public class AutoPolicyServiceImpl implements AutoPolicyService {
                 .collect(Collectors.toList());
     }
 
+    private <T> void addPredicateIfPresent(List<Predicate> predicates, CriteriaBuilder cb, Root<AutoPolicy> root,
+                                           String field, T value) {
+        Optional.ofNullable(value).ifPresent(v -> predicates.add(cb.equal(root.get(field), v)));
+    }
+
     @Override
-    public List<AutoPolicyDTO> getAllPolicies(LocalDate startDate, LocalDate endDate, PolicyStatus status, AutoPolicyType type, String vehicleMake, String firstName, String lastName, Double minPremium, Double maxPremium) {
+    public List<AutoPolicyDTO> getAllPolicies(LocalDate startDate, LocalDate endDate, PolicyStatus status, AutoPolicyType type,
+                                              String vehicleMake, String firstName, String lastName, Double minPremium, Double maxPremium) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
         CriteriaQuery<AutoPolicy> query = cb.createQuery(AutoPolicy.class);
         Root<AutoPolicy> root = query.from(AutoPolicy.class);
 
         List<Predicate> predicates = new ArrayList<>();
-
-        if (startDate != null) {
-            predicates.add(cb.greaterThanOrEqualTo(root.get("startDate"), startDate));
-        }
-        if (endDate != null) {
-            predicates.add(cb.lessThanOrEqualTo(root.get("endDate"), endDate));
-        }
-        if (status != null) {
-            predicates.add(cb.equal(root.get("status"), status));
-        }
-        if (type != null) {
-            predicates.add(cb.equal(root.get("policyType"), type));
-        }
-        if (vehicleMake != null && !vehicleMake.isEmpty()) {
-            predicates.add(cb.like(root.get("vehicleMake"), "%" + vehicleMake + "%"));
-        }
-        if (firstName != null && !firstName.isEmpty()) {
-            predicates.add(cb.like(root.get("firstName"), "%" + firstName + "%"));
-        }
-        if (minPremium != null) {
-            predicates.add(cb.greaterThanOrEqualTo(root.get("premiumAmount"), minPremium));
-        }
-        if (maxPremium != null) {
-            predicates.add(cb.lessThanOrEqualTo(root.get("premiumAmount"), maxPremium));
-        }
-        if (lastName != null && !lastName.isEmpty()) {
-            predicates.add(cb.like(root.get("lastName"), "%" + lastName + "%"));
-        }
+        addPredicateIfPresent(predicates, cb, root, "startDate", startDate);
+        addPredicateIfPresent(predicates, cb, root, "endDate", endDate);
+        addPredicateIfPresent(predicates, cb, root, "status", status);
+        addPredicateIfPresent(predicates, cb, root, "policyType", type);
+        addPredicateIfPresent(predicates, cb, root, "vehicleMake", vehicleMake);
+        addPredicateIfPresent(predicates, cb, root, "firstName", firstName);
+        addPredicateIfPresent(predicates, cb, root, "lastName", lastName);
+        addPredicateIfPresent(predicates, cb, root, "premiumAmount", minPremium);
+        addPredicateIfPresent(predicates, cb, root, "premiumAmount", maxPremium);
 
         query.select(root).where(predicates.toArray(new Predicate[0]));
         return entityManager.createQuery(query).getResultList()
@@ -134,4 +148,5 @@ public class AutoPolicyServiceImpl implements AutoPolicyService {
                 .map(autoPolicyMapper::toDTO)
                 .collect(Collectors.toList());
     }
+
 }

@@ -1,6 +1,5 @@
 package com.insurance.policy.insutech.model;
 
-import com.insurance.policy.insutech.converter.AutoPolicyTypeConverter;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,12 +13,9 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AutoPolicy extends SuperPolicy {
-
-    @Convert(converter = AutoPolicyTypeConverter.class)
-    @Column(name = "policy_type", length = 20, nullable = false)
-
+    @Column(name = "policy_type", nullable = false)
+    @Enumerated(EnumType.STRING)
     private AutoPolicyType policyType;
-
     private String vehicleMake;
     private String vehicleModel;
     private String vehicleYear;

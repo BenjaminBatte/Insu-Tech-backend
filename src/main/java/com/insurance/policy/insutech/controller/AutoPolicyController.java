@@ -20,7 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:4200", "http://localhost:5173", "http://localhost:5174","http://localhost:64615"})
 @RestController
 @RequestMapping("/api/v1/policies")
 @RequiredArgsConstructor

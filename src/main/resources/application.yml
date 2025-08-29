@@ -12,3 +12,18 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=30m
+  logging:
+    level:
+      org.springframework.cache: TRACE
+      com.insurance.policy.insutech.service: DEBUG
+
+  springdoc:
+    api-docs:
+      path: /api-docs  # Custom path for OpenAPI JSON (default: /v3/api-docs)
+    swagger-ui:
+      path: /swagger-ui.html  # Custom path for Swagger UI (default: /swagger-ui.html)
+      enabled: true  # Enable Swagger UI (default: true)

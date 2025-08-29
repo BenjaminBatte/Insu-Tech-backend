@@ -1,8 +1,18 @@
 package com.insurance.policy.insutech.model;
 
 import com.insurance.policy.insutech.converter.AutoPolicyTypeConverter;
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.Cache;
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,6 +23,8 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Cacheable // Enable Hibernate second-level cache for this entity
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE) // Strategy for cache concurrency
 public class AutoPolicy extends SuperPolicy {
 
     @Convert(converter = AutoPolicyTypeConverter.class)

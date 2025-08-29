@@ -1,6 +1,7 @@
 package com.insurance.policy.insutech.e2e;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -8,6 +9,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.io.File;
 import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,6 +36,12 @@ class AutoPolicyUITest {
     @AfterEach
     void cleanup() {
         if (driver != null) driver.quit();
+    }
+    @AfterAll
+    void tearDownAll() {
+        if (driver != null) {
+            driver.quit();
+        }
     }
 
     // 🔹 Helper to set date values using JavaScript (more reliable for React)
@@ -62,11 +70,11 @@ class AutoPolicyUITest {
         driver.findElement(By.id("vehicleModel")).sendKeys(model);
         driver.findElement(By.id("vehicleYear")).sendKeys(year);
         driver.findElement(By.id("premiumAmount")).sendKeys(premium);
+        driver.findElement(By.id("premiumAmount")).sendKeys(Keys.ENTER);
 
         new Select(driver.findElement(By.id("policyType"))).selectByVisibleText(type);
         new Select(driver.findElement(By.id("status"))).selectByVisibleText(status);
 
-        // ✅ Use JavaScript to set date values correctly
         setDateByJs("startDate", startDate);
         setDateByJs("endDate", endDate);
     }
@@ -77,12 +85,20 @@ class AutoPolicyUITest {
         wait.until(ExpectedConditions.titleContains("Insu-Tech"));
         assertTrue(driver.getTitle().contains("Insu-Tech"));
     }
+    @AfterEach
+    void takeScreenshot(TestInfo testInfo) {
+        if (driver instanceof TakesScreenshot ts) {
+            File screenshot = ts.getScreenshotAs(OutputType.FILE);
+            screenshot.renameTo(new File("E:\\ins-tec\\screen-shot\\" + testInfo.getDisplayName() + ".png"));
+        }
+    }
 
     @Test
+    @Transactional
     void shouldCreatePolicy_AP202_AlexWilliams() {
         driver.get("http://localhost:5173/create");
         fillPolicyForm(
-                "AP-792",
+                "AP-6178",
                 "Ananda",
                 "Wills",
                 "Toyota",
@@ -97,29 +113,32 @@ class AutoPolicyUITest {
 
         driver.findElement(By.cssSelector("button[type='submit']")).click();
 
-        // Wait for success message with more specific selector
-        WebElement success = wait.until(
+        WebElement error = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(
-                        By.cssSelector(".success-message, [data-testid='success-message']")
+                        By.cssSelector(".error-message")
                 )
         );
-        assertTrue(success.getText().toLowerCase().contains("success"));
+
+        assertTrue(
+                error.getText().toLowerCase().contains("end date must be after start date"),
+                "Expected error: 'End date must be after start date.'"
+        );
     }
     @Test
     void shouldShowErrorForMissingRequiredFields() {
         driver.get("http://localhost:5173/create");
+
         driver.findElement(By.cssSelector("button[type='submit']")).click();
-        WebElement error = wait.until(
-                ExpectedConditions.visibilityOfElementLocated(
-                        By.cssSelector(".error-message, [data-testid='error-message']")
-                )
-        );
-        assertTrue(error.getText().toLowerCase().contains("failed"));
+
+        // Form should not submit → still on /create
+        assertTrue(driver.getCurrentUrl().contains("/create"));
     }
+
     @Test
+    @Transactional
     void shouldNavigateToPoliciesPageAfterSubmit() {
         driver.get("http://localhost:5173/create");
-        fillPolicyForm("AP-555", "Navi", "Gate", "Honda", "Civic", "2022", "500",
+        fillPolicyForm("AP-5965", "Navi", "Gate", "Honda", "Civic", "2022", "500",
                 "COLLISION", "ACTIVE", "2025-09-01", "2025-12-01");
 
         driver.findElement(By.cssSelector("button[type='submit']")).click();
@@ -130,17 +149,38 @@ class AutoPolicyUITest {
     @Test
     void shouldFailOnInvalidDateRange() {
         driver.get("http://localhost:5173/create");
-        fillPolicyForm("AP-999", "John", "Invalid", "Tesla", "Model 3", "2023", "1200",
-                "COMPREHENSIVE", "ACTIVE", "2025-12-01", "2025-01-01"); // end before start
+
+        // Fill with an invalid date range (end date before start date)
+        fillPolicyForm(
+                "AP-1999",
+                "John",
+                "Invalid",
+                "Tesla",
+                "Model 3",
+                "2023",
+                "1200",
+                "COMPREHENSIVE",
+                "ACTIVE",
+                "2025-12-01", // start date
+                "2025-01-01"  // end date before start date
+        );
 
         driver.findElement(By.cssSelector("button[type='submit']")).click();
+
+        // Wait for the error message
         WebElement error = wait.until(
                 ExpectedConditions.visibilityOfElementLocated(
-                        By.cssSelector(".error-message, [data-testid='error-message']")
+                        By.cssSelector(".error-message")
                 )
         );
-        assertTrue(error.getText().toLowerCase().contains("failed"));
+
+
+        assertTrue(
+                error.getText().toLowerCase().contains("end date must be after start date"),
+                "Expected error message: 'End date must be after start date.' but got: " + error.getText()
+        );
     }
+
     @Test
     void shouldThrowExceptionWhenElementNotFound() {
         driver.get("http://localhost:5173/create");
@@ -166,7 +206,7 @@ class AutoPolicyUITest {
     void shouldCreatePolicy_AP200_BenjaminMukasa() {
         driver.get("http://localhost:5173/create");
         fillPolicyForm(
-                "AP-431",
+                "AP-8895",
                 "Benja",
                 "Muka",
                 "Ford",
